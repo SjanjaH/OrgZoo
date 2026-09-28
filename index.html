@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OrgZoo — інтерактивний довідник</title>
+<style>
+:root{--bg:#0b0b0b;--panel:#151515;--line:#303030;--text:#f5f3ef;--muted:#aaa49c;--orange:#f58a0a;--soft:#211a13;}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+header{padding:24px clamp(18px,4vw,54px);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:18px;align-items:end;flex-wrap:wrap}
+.brand{font-size:34px;font-weight:900;letter-spacing:.04em} .brand i{display:inline-block;width:38px;height:6px;background:var(--orange);margin-left:10px}
+small,.muted{color:var(--muted)} main{padding:24px clamp(18px,4vw,54px) 70px;max-width:1500px;margin:auto}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px} button,select,input{font:inherit}
+.tab,.btn{border:1px solid var(--line);background:#151515;color:var(--text);padding:11px 15px;border-radius:8px;cursor:pointer}
+.tab.active,.btn.primary{background:var(--orange);color:#111;border-color:var(--orange);font-weight:700}
+.controls{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:10px;margin-bottom:22px}
+input,select{width:100%;background:#111;border:1px solid var(--line);color:var(--text);padding:12px;border-radius:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;transition:.2s}
+.card:hover{transform:translateY(-3px);border-color:#555} .card img{width:100%;display:block;aspect-ratio:1/1;object-fit:cover}
+.card .pad{padding:14px} .card h3{margin:0;font-size:23px} .en{font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.12em}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px} .tag{font-size:11px;border:1px solid #3a3a3a;border-radius:999px;padding:5px 8px;color:#c8c3bc}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px} .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.profile{display:grid;grid-template-columns:minmax(280px,430px) 1fr;gap:26px} .profile img{width:100%;border-radius:12px}
+h1,h2,h3{margin-top:0} .accent{color:var(--orange)} .resource{border-left:4px solid var(--orange);padding:12px 15px;background:var(--soft);margin:16px 0}
+.result{margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:10px;background:#101010}
+.pack{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0} .chip{padding:8px 10px;border-radius:999px;background:#202020;border:1px solid #383838}
+.empty{padding:38px;text-align:center;color:var(--muted);border:1px dashed #333;border-radius:12px}
+.back{margin-bottom:16px} footer{margin-top:38px;color:#777;font-size:12px}
+@media(max-width:850px){.controls,.profile,.two{grid-template-columns:1fr} .brand{font-size:28px}}
+</style>
+</head>
+<body>
+<header><div><div class="brand">ORGZOO<i></i></div><small>КОРПОРАТИВНА ФАУНА · інтерактивний довідник</small></div><small>Люди · ролі · системи</small></header>
+<main>
+<nav class="tabs">
+<button class="tab active" data-view="catalog">Каталог</button>
+<button class="tab" data-view="finder">Знайти роль</button>
+<button class="tab" data-view="pair">Хто зустрівся?</button>
+<button class="tab" data-view="pack">Моя зграя</button>
+</nav>
+<section id="catalog">
+<div class="controls">
+<input id="q" placeholder="Пошук тварини або ключового слова…">
+<select id="focus"><option value="">Фокус взаємодії: усі</option><option>індивідуальний</option><option>командний</option></select>
+<select id="energy"><option value="">Вектор енергії: усі</option><option>стабільність</option><option>зміни</option></select>
+<select id="risk"><option value="">Контекстуальний ризик: усі</option><option>конструктивний</option><option>амбівалентний</option><option>ризиковий</option></select>
+</div><div id="grid" class="grid"></div>
+</section>
+<section id="profile" hidden></section>
+<section id="finder" hidden><div class="panel"><h2>Знайти потрібну роль</h2><p class="muted">Оберіть, що зараз потрібно команді. Це фасилітаційна навігація, а не психологічний тест.</p><select id="need"></select><div id="finderResult" class="result"></div></div></section>
+<section id="pair" hidden><div class="panel"><h2>Хто зустрівся?</h2><div class="two"><select id="a"></select><select id="b"></select></div><div id="pairResult" class="result"></div></div></section>
+<section id="pack" hidden><div class="panel"><h2>Моя зграя</h2><p class="muted">Додайте 3–8 поведінкових патернів і подивіться на баланс екосистеми.</p><div class="two"><select id="packSelect"></select><button id="add" class="btn primary">Додати до зграї</button></div><div id="chips" class="pack"></div><div id="packResult" class="result">Додайте щонайменше 3 тварини.</div></div></section>
+<footer>OrgZoo · based on the model by Dr. Arthur Shelley · адаптація Ксенії Ємшиної-Гоцко. Розширені взаємодії та фільтри в цьому прототипі є фасилітаційною інтерпретацією.</footer>
+</main>
+<script>
+const animals=[{"ua": "Гібон", "en": "GIBBON", "desc": "Живе спілкуванням і взаємодією з людьми, легко створює навколо себе рух та енергію. Любить бути в центрі подій і підтримує соціальні зв’язки в команді.", "focus": "командний", "energy": "зміни", "risk": "амбівалентний", "resource": "зв’язки", "needs": ["об’єднати людей", "підсилити взаємодію"], "image": "images/animal-02.png"}, {"ua": "Єдиноріг", "en": "UNICORN", "desc": "Міфічний ідеальний менеджер. Їх майже не існує в реальності, але дехто думає, що саме вони той ідеал, якого хочуть мати підлеглі у якості керівника.", "focus": "індивідуальний", "energy": "стабільність", "risk": "ризиковий", "resource": "образ", "needs": ["перевірити очікування"], "image": "images/animal-03.png"}, {"ua": "Сова", "en": "OWL", "desc": "Ділиться знаннями, щоб розвивати інших. Уважно слухає, аналізує ситуацію та дає виважені поради, допомагаючи команді бачити ширшу перспективу.", "focus": "командний", "energy": "стабільність", "risk": "конструктивний", "resource": "знання", "needs": ["осмислити складність", "передати знання"], "image": "images/animal-04.png"}, {"ua": "Кіт", "en": "CAT", "desc": "Любить бути в центрі уваги, майстерно створює позитивне враження і шукає визнання. Вміє зачаровувати інших, швидко втрачає інтерес і уникає ризиків.", "focus": "індивідуальний", "energy": "зміни", "risk": "амбівалентний", "resource": "визнання", "needs": ["зробити результат помітним"], "image": "images/animal-05.png"}, {"ua": "Як", "en": "YAK", "desc": "Діє прямо, з ентузіазмом і доброзичливістю, легко входить у контакт. Колоритний, приносить рух і тепло, хоча інколи руйнує бар’єри просто тому, що не помічає їх.", "focus": "командний", "energy": "зміни", "risk": "амбівалентний", "resource": "імпульс", "needs": ["запустити дію", "додати енергії"], "image": "images/animal-06.png"}, {"ua": "Шакал", "en": "JACKAL", "desc": "Тримається малого закритого кола, контролює доступ і захищає інтереси своєї групи. Орієнтується у внутрішній політиці, підтримує потрібні зв’язки й чітко позначає територію впливу.", "focus": "командний", "energy": "стабільність", "risk": "ризиковий", "resource": "доступ", "needs": ["побачити неформальний вплив"], "image": "images/animal-07.png"}, {"ua": "Козеня", "en": "KID", "desc": "З ентузіазмом входить у нове середовище, відкрито вчиться, легко довіряє й тягнеться до людей. Ще недосвідчене, але приносить живу енергію, щирий інтерес і готовність рости в команді.", "focus": "командний", "energy": "зміни", "risk": "конструктивний", "resource": "потенціал", "needs": ["принести свіжий погляд", "навчатися"], "image": "images/animal-08.png"}, {"ua": "Бджола", "en": "BEE", "desc": "Активно працює в команді, охоче співпрацює з іншими й використовує інструменти, щоб рухати спільну справу вперед. Лояльна й стратегічна, уважно ставиться до своєї зони відповідальності.", "focus": "командний", "energy": "зміни", "risk": "конструктивний", "resource": "кооперація", "needs": ["підсилити взаємодію", "координувати роботу"], "image": "images/animal-09.png"}, {"ua": "Піранья", "en": "PIRANHA", "desc": "Діють різко, агресивно й зграєю, швидко атакують там, де відчувають вразливість. Живляться негативом і плітками, створюючи токсичне середовище, у якому страх стає інструментом впливу.", "focus": "командний", "energy": "зміни", "risk": "ризиковий", "resource": "страх", "needs": ["побачити токсичну динаміку"], "image": "images/animal-10.png"}, {"ua": "Змія", "en": "RATTLESNAKE", "desc": "Попереджає про небезпеку й демонструє готовність до нападу, використовуючи тиск як спосіб впливу. Здебільшого так вона позначає територію та сіє напруження, щоб утримати контроль над ситуацією.", "focus": "індивідуальний", "energy": "стабільність", "risk": "ризиковий", "resource": "контроль", "needs": ["побачити тиск"], "image": "images/animal-11.png"}, {"ua": "Гриф", "en": "VULTURE", "desc": "Спостерігає, аналізує і чекає, поки інші виснажаться, щоб скористатися ситуацією. Діє лише тоді, коли ризики мінімальні, а чужа робота вже зроблена.", "focus": "індивідуальний", "energy": "стабільність", "risk": "ризиковий", "resource": "можливість", "needs": ["побачити опортунізм"], "image": "images/animal-12.png"}, {"ua": "Лев", "en": "LION", "desc": "Домінує через силу й контроль, задає правила прайду та тримає інших у напрузі. Тисне авторитетом і утверджує свою владу, змушуючи команду підкорятися його порядку.", "focus": "індивідуальний", "energy": "зміни", "risk": "ризиковий", "resource": "влада", "needs": ["прийняти жорстке рішення"], "image": "images/animal-13.png"}, {"ua": "Мураха", "en": "ANT", "desc": "Працьовита й організована, просто береться до роботи та послідовно доводить її до результату. Вона віддана, покладається на інтуїцію та звичний порядок дій.", "focus": "командний", "energy": "стабільність", "risk": "конструктивний", "resource": "виконання", "needs": ["довести до результату", "організувати виконання"], "image": "images/animal-14.png"}, {"ua": "Орел", "en": "EAGLE", "desc": "Знає, чого хоче, мислить стратегічно і тримає курс значно вище за решту. Діє впевнено, задає напрям команді та надихає інших бачити далі, ширше й сміливіше.", "focus": "командний", "energy": "зміни", "risk": "конструктивний", "resource": "напрям", "needs": ["задати стратегічний напрям", "запустити зміни"], "image": "images/animal-15.png"}, {"ua": "Миша", "en": "MOUSE", "desc": "Постійно метушиться, щоб виконати завдання, швидко підхоплює робочий ритм. Працьовита і продуктивна, підтримує щоденний рух системи, навіть коли її внесок часто лишається в тіні.", "focus": "індивідуальний", "energy": "стабільність", "risk": "конструктивний", "resource": "продуктивність", "needs": ["підтримати щоденну роботу"], "image": "images/animal-16.png"}, {"ua": "Гієна", "en": "HYENA", "desc": "Діють зграєю і нападають там, де відчувають слабкість або беззахисність. Владу й успіх будують через свої угруповання, використовуючи лояльність до своїх, агресію та опортунізм як інструменти впливу.", "focus": "командний", "energy": "зміни", "risk": "ризиковий", "resource": "коаліція", "needs": ["побачити неформальні коаліції"], "image": "images/animal-17.png"}, {"ua": "Кит", "en": "WHALE", "desc": "Бачить ширшу картину, надихає інших і допомагає команді рухатися вперед. Вміє тримати баланс, навіть у складних ситуаціях, додає впевненості своїм прикладом.", "focus": "командний", "energy": "зміни", "risk": "конструктивний", "resource": "баланс", "needs": ["побачити ширшу картину", "втримати баланс"], "image": "images/animal-18.png"}, {"ua": "Собака", "en": "DOG", "desc": "Швидко вчиться, охоче включається в роботу й щиро прагне бути корисним тому, кому довіряє. Надійний, вірно слідує за обраним напрямом, інколи більше орієнтуючись на авторитет, ніж на власну позицію.", "focus": "командний", "energy": "стабільність", "risk": "амбівалентний", "resource": "довіра", "needs": ["підсилити надійність"], "image": "images/animal-19.png"}, {"ua": "Хамелеон", "en": "CHAMELEON", "desc": "Швидко адаптується до будь-якої ситуації та підлаштовується під співрозмовника. Може мати різні позиції в різних групах і майстерно лавірує між інтересами.", "focus": "індивідуальний", "energy": "зміни", "risk": "амбівалентний", "resource": "адаптація", "needs": ["адаптуватися", "узгодити інтереси"], "image": "images/animal-20.png"}, {"ua": "Трицератопс", "en": "TRICERATOPS", "desc": "Тримається за звичне й не хоче адаптуватися, воліючи, щоб його залишили в спокої. Обережний, мислячий і територіальний, він зустрічає зміни з песимізмом та впертим опором новому.", "focus": "індивідуальний", "energy": "стабільність", "risk": "амбівалентний", "resource": "стабільність", "needs": ["перевірити ризики змін"], "image": "images/animal-21.png"}, {"ua": "Зебра", "en": "ZEBRA", "desc": "Прагне правил і визначеності, тому швидко розділяє рішення, людей і ситуації на правильні / неправильні, свої / чужі, працює / не працює. Через напруженість може спростити складне й зробити правило важливішим за контекст.", "focus": "індивідуальний", "energy": "стабільність", "risk": "амбівалентний", "resource": "визначеність", "needs": ["встановити межі", "перевірити правила"], "image": "images/animal-22.png"}, {"ua": "Соловей", "en": "NIGHTINGALE", "desc": "Живе комунікаціями, історіями та публічним образом, уміє красиво й переконливо представляти організацію та досягнення. Сильний у зовнішніх комунікаціях, презентаціях, але потребує фактів, щоб образ не випереджав реальний зміст роботи.", "focus": "командний", "energy": "зміни", "risk": "амбівалентний", "resource": "репутація", "needs": ["зробити результат помітним", "представити назовні"], "image": "images/animal-23.png"}, {"ua": "Бабка", "en": "DRAGONFLY", "desc": "Приносить зовнішню незалежну експертизу, ширший погляд і допомагає побачити те, що команда вже не помічає зсередини. Сильна в аудиті, кризах і складних рішеннях, але потребує достатнього контексту, інакше організація ризикує підмінити власне мислення чужою рекомендацією.", "focus": "індивідуальний", "energy": "зміни", "risk": "конструктивний", "resource": "експертиза", "needs": ["отримати зовнішній погляд", "провести аудит"], "image": "images/animal-24.png"}, {"ua": "Перепілка", "en": "QUAIL", "desc": "Чутлива до змін, невизначеності та тиску, рано помічає слабкі сигнали напруження там, де інші ще впевнені, що все добре. Та водночас вона може плутати припущення з фактами й запускати тривогу швидше, ніж з’являється перевірена інформація.", "focus": "командний", "energy": "стабільність", "risk": "амбівалентний", "resource": "сигнал ризику", "needs": ["помітити слабкі сигнали", "перевірити ризики"], "image": "images/animal-25.png"}, {"ua": "Ксенопс", "en": "XENOPS", "desc": "Не задовольняється очевидною відповіддю й досліджує деталі, шукаючи приховані зв'язки, баги та аномалії. Незамінний у тестуванні, аудиті й аналітиці, хоча без чітких меж може надто заглибитися в пошуки й затримати рішення заради ще одного винятку.", "focus": "індивідуальний", "energy": "зміни", "risk": "конструктивний", "resource": "прихована інформація", "needs": ["знайти приховану проблему", "протестувати систему"], "image": "images/animal-26.png"}]; let pack=[];
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function options(){return animals.map((x,i)=>`<option value="${i}">${esc(x.ua)} · ${x.en}</option>`).join('')}
+function renderGrid(){
+ let q=$('#q').value.toLowerCase(),f=$('#focus').value,e=$('#energy').value,r=$('#risk').value;
+ let xs=animals.filter(x=>(!q||(x.ua+' '+x.en+' '+x.desc+' '+x.resource).toLowerCase().includes(q))&&(!f||x.focus===f)&&(!e||x.energy===e)&&(!r||x.risk===r));
+ $('#grid').innerHTML=xs.map(x=>`<article class="card" data-name="${esc(x.ua)}"><img src="${x.image}" alt="Картка ${esc(x.ua)}"><div class="pad"><span class="en">${x.en}</span><h3>${esc(x.ua)}</h3><div class="tags"><span class="tag">${x.focus}</span><span class="tag">${x.energy}</span><span class="tag">${x.risk}</span></div></div></article>`).join('')||'<div class="empty">За цими фільтрами тварин не знайдено.</div>';
+ $$('#grid .card').forEach(c=>c.addEventListener('click',()=>openProfile(c.dataset.name)));
+}
+function openProfile(name){
+ const x=animals.find(a=>a.ua===name); if(!x)return;
+ $('#catalog').hidden=true; $('#profile').hidden=false;
+ $('#profile').innerHTML=`<button class="btn back" id="back">← До каталогу</button><div class="profile"><img src="${x.image}" alt="Картка ${esc(x.ua)}"><div><span class="en">${x.en}</span><h1>${esc(x.ua)}</h1><p>${esc(x.desc)}</p><div class="resource"><small>КЛЮЧОВИЙ РЕСУРС</small><h3>${esc(x.resource)}</h3></div><h3>Координати поведінки</h3><div class="tags"><span class="tag">Фокус: ${x.focus}</span><span class="tag">Енергія: ${x.energy}</span><span class="tag">Ризик: ${x.risk}</span></div><h3 style="margin-top:22px">Коли може бути корисною</h3><p>${x.needs.map(n=>'• '+esc(n)).join('<br>')}</p><p class="muted">Повний шар Essence / Strengths / Blind Spots / How to Engage буде додано як наступний контентний рівень.</p></div></div>`;
+ $('#back').addEventListener('click',()=>{$('#profile').hidden=true;$('#catalog').hidden=false});
+}
+function showView(v){
+ ['catalog','profile','finder','pair','pack'].forEach(id=>$('#'+id).hidden=id!==v);
+ $$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===v));
+}
+$$('.tab').forEach(t=>t.addEventListener('click',()=>showView(t.dataset.view)));
+['#q','#focus','#energy','#risk'].forEach(s=>$(s).addEventListener(s==='#q'?'input':'change',renderGrid));
+const needs=[...new Set(animals.flatMap(x=>x.needs))].sort(); $('#need').innerHTML=needs.map(n=>`<option>${esc(n)}</option>`).join('');
+function renderFinder(){
+ let n=$('#need').value, xs=animals.filter(x=>x.needs.includes(n));
+ $('#finderResult').innerHTML=`<h3>${esc(n)}</h3>`+xs.map(x=>`<p><b>${esc(x.ua)}</b> — ${esc(x.desc)}</p>`).join('');
+}
+$('#need').addEventListener('change',renderFinder);
+$('#a').innerHTML=options(); $('#b').innerHTML=options(); $('#b').selectedIndex=1;
+function pair(){
+ const a=animals[+$('#a').value],b=animals[+$('#b').value]; if(a===b){$('#pairResult').innerHTML='Оберіть дві різні тварини.';return}
+ let type='Напруження / потреба в узгодженні',why=`${a.resource} ↔ ${b.resource}`;
+ if(a.risk==='конструктивний'&&b.risk==='конструктивний'&&a.resource!==b.resource) type='Потенційний симбіоз';
+ if(a.risk==='ризиковий'&&b.risk==='ризиковий') type='Потенційно небезпечне підсилення';
+ if(a.energy!==b.energy&&a.focus!==b.focus) type='Продуктивне напруження';
+ $('#pairResult').innerHTML=`<small>ФАСИЛІТАЦІЙНА ІНТЕРПРЕТАЦІЯ</small><h2 class="accent">${type}</h2><p><b>${a.ua}</b> приносить ресурс «${a.resource}», <b>${b.ua}</b> — «${b.resource}».</p><p>Запитання команді: <b>що має бути спільним правилом взаємодії, щоб обидва ресурси працювали на результат?</b></p>`;
+}
+$('#a').addEventListener('change',pair);$('#b').addEventListener('change',pair);
+$('#packSelect').innerHTML=options();
+$('#add').addEventListener('click',()=>{let i=+$('#packSelect').value;if(pack.length>=8)return alert('У прототипі — максимум 8 тварин.');pack.push(i);renderPack()});
+function renderPack(){
+ $('#chips').innerHTML=pack.map((i,k)=>`<button class="chip" data-k="${k}">${animals[i].ua} ×</button>`).join('');
+ $$('#chips button').forEach(b=>b.addEventListener('click',()=>{pack.splice(+b.dataset.k,1);renderPack()}));
+ if(pack.length<3){$('#packResult').innerHTML='Додайте щонайменше 3 тварини.';return}
+ let xs=pack.map(i=>animals[i]), counts=k=>xs.reduce((o,x)=>(o[x[k]]=(o[x[k]]||0)+1,o),{});
+ let f=counts('focus'),e=counts('energy'),r=counts('risk');
+ let resources=[...new Set(xs.map(x=>x.resource))];
+ $('#packResult').innerHTML=`<h3>Карта екосистеми</h3><p><b>Фокус:</b> командні ${f['командний']||0} · індивідуальні ${f['індивідуальний']||0}</p><p><b>Енергія:</b> зміни ${e['зміни']||0} · стабільність ${e['стабільність']||0}</p><p><b>Контекстний ризик:</b> конструктивні ${r['конструктивний']||0} · амбівалентні ${r['амбівалентний']||0} · ризикові ${r['ризиковий']||0}</p><p><b>Ресурси зграї:</b> ${resources.join(' · ')}</p><p class="accent"><b>Питання:</b> якої функції в цій екосистемі забагато, а якої критично бракує?</p>`;
+}
+renderGrid();renderFinder();pair();
+</script></body></html>
